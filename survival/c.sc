@@ -112,5 +112,5 @@ __get_store_player_data(player) -> (
 
 __on_player_connects(player) -> if(
     __get_store_player_data(player),
-    modify(player, 'gamemode' , 'spectator'
-));
+    modify(player, 'gamemode' , 'spectator')
+);
