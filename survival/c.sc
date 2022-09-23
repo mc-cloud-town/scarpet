@@ -22,15 +22,16 @@ __restore_player_params(player) -> (
 
     run('execute in ' + config:'dimension' + ' run tp @s ~ ~ ~');
 
-    modify(player, 'location', [
-        ...config:'pos',
-        config:'yaw',
-        config:'pitch'
-    ]);
+    try (
+        modify(player, 'location', [
+            ...config:'pos',
+            config:'yaw',
+            config:'pitch'
+        ]);
+        modify(player, 'motion', config:'motion');
+        for (config:'effects', modify(player, 'effect', _:'name', _:'duration', _:'amplifier'));
+    );
     modify(player, 'gamemode', 'survival');
-    modify(player, 'motion', config:'motion');
-
-    for (config:'effects', modify(player, 'effect', _:'name', _:'duration', _:'amplifier'));
 
     display_title(player, 'actionbar', format('y 退出相機模式'));
     __remove_player_config(player);
