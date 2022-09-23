@@ -20,20 +20,25 @@ __config() -> {
 __restore_player_params(player) -> (
     config = __get_store_player_data(player);
 
-    run('execute in ' + config:'dimension' + ' run tp @s ~ ~ ~');
+    if (config, 
+        run('execute in ' + config:'dimension' + ' run tp @s ~ ~ ~');
 
-    try (
-        modify(player, 'location', [
-            ...config:'pos',
-            config:'yaw',
-            config:'pitch'
-        ]);
-        modify(player, 'motion', config:'motion');
-        for (config:'effects', modify(player, 'effect', _:'name', _:'duration', _:'amplifier'));
+        try (
+            modify(player, 'location', [
+                ...config:'pos',
+                config:'yaw',
+                config:'pitch'
+            ]);
+            modify(player, 'motion', config:'motion');
+            for (config:'effects', modify(player, 'effect', _:'name', _:'duration', _:'amplifier'));
+        );
+        display_title(player, 'actionbar', format('y 退出相機模式')), (
+            display_title(player, 'actionbar', format('r 未找到過去數據將於該座標進行切換，將給您10秒抗性反應'));
+            modify(player(), 'effect', 'minecraft:resistance', 200, 255, true)
+        )
     );
     modify(player, 'gamemode', 'survival');
 
-    display_title(player, 'actionbar', format('y 退出相機模式'));
     __remove_player_config(player);
 );
 
