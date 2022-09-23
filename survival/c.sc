@@ -34,7 +34,7 @@ __restore_player_params(player) -> (
         );
         display_title(player, 'actionbar', format('y 退出相機模式')), (
             display_title(player, 'actionbar', format('r 未找到過去數據將於該座標進行切換，將給您10秒抗性反應'));
-            run('effect give @s minecraft:resistance 10 255 true')
+            modify(player(), 'effect', 'minecraft:resistance', 200, 255, true)
         )
     );
     modify(player, 'gamemode', 'survival');
