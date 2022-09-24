@@ -33,7 +33,11 @@ __restore_player_params(player) -> (
             for (config:'effects', modify(player, 'effect', _:'name', _:'duration', _:'amplifier'));
         );
         display_title(player, 'actionbar', format('y 退出相機模式')), (
-            if (!__safe_survival(player), return());
+            if (
+                __safe_survival(player),
+                display_title(player, 'actionbar', format('rb 您的數據丟失將於該附近安全地方回復')),
+                return()
+            );
         )
     );
 
@@ -41,7 +45,7 @@ __restore_player_params(player) -> (
     __remove_player_config(player);
 );
 
-__safe_survival(player) => (
+__safe_survival(player) -> (
     yposes = l();
     l(x, y, z) = pos(player);
     for(range(32), yposes += y + _; yposes += y - _);
@@ -53,7 +57,7 @@ __safe_survival(player) => (
             )
         )
     );
-    display_title(player, 'actionbar', format('rb 在 32格範圍內未找到安全位置。'));
+    display_title(player, 'actionbar', format('rb 在 32 格範圍內未找到安全位置。'));
     false
 );
 
