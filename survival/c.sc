@@ -51,7 +51,9 @@ __safe_survival(player) -> (
     for(range(32), yposes += y + _; yposes += y - _);
     for(yposes,
         scan(x, _, z, 32, 0, 32,
-            if(air(_) && air(pos_offset(_, 'up')) && suffocates(pos_offset(_, 'down')),
+            up = pos_offset(_, 'up');
+            down = pos_offset(_, 'down');
+            if(air(_) && air(up) && suffocates(down) && !flammable(down),
                 modify(player, 'pos', pos(_)+l(0.5,0.2,0.5));
                 return(true);
             )
