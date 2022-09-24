@@ -33,13 +33,28 @@ __restore_player_params(player) -> (
             for (config:'effects', modify(player, 'effect', _:'name', _:'duration', _:'amplifier'));
         );
         display_title(player, 'actionbar', format('y 退出相機模式')), (
-            display_title(player, 'actionbar', format('r 未找到過去數據將於該座標進行切換，將給您10秒抗性反應'));
-            modify(player(), 'effect', 'minecraft:resistance', 200, 255, true)
+            if (!__safe_survival(player), return());
         )
     );
-    modify(player, 'gamemode', 'survival');
 
+    modify(player, 'gamemode', 'survival');
     __remove_player_config(player);
+);
+
+__safe_survival(player) => (
+    yposes = l();
+    l(x, y, z) = pos(player);
+    for(range(32), yposes += y + _; yposes += y - _);
+    for(yposes,
+        scan(x, _, z, 32, 0, 32,
+            if(air(_) && air(pos_offset(_, 'up')) && suffocates(pos_offset(_, 'down')),
+                modify(player, 'pos', pos(_)+l(0.5,0.2,0.5));
+                return(true);
+            )
+        )
+    );
+    display_title(player, 'actionbar', format('rb 在 32格範圍內未找到安全位置。'));
+    false
 );
 
 __to_spectator(player) -> (
