@@ -1,5 +1,5 @@
 // 原出處: https://github.com/gnembon/scarpet/blob/master/programs/survival/cam.sc
-// 修改: 猴子 (https://github.com/a3510377)
+// 修改: 猴貓 (https://github.com/a3510377)
 
 __config() -> {
     'stay_loaded' -> 'true',
@@ -7,15 +7,45 @@ __config() -> {
         '' -> _() -> __check_type(player()),
         '<tp_player>' -> _(tp_player) -> (
             p = player(tp_player);
-            if (player() == p, return(run('tellraw @s "§4您不能旁觀自己"')));
+            if (player() == p, return(run('tellraw @s "'+i18n(player(), 'cannotWatchSelf')+'"')));
             if (p, (
                 if (player()~'gamemode' != 'spectator', __to_spectator(player()));
                 run('tp ' + p~'command_name')
-            ), run('tellraw @s "§4找不到玩家"'))
+            ), run('tellraw @s "'+i18n(player(), 'playerNotFound')+'"'))
         )
     },
     'arguments' -> {'tp_player' -> {'type' -> 'players', 'single' -> true}},
 };
+
+
+global_languages = {
+    'zh_tw' -> {
+        'cannotWatchSelf' -> format('r 您不能旁觀自己'),
+        'playerNotFound' -> format('r 找不到玩家'),
+        'exitCameraMode' -> format('y 退出相機模式'),
+        'enterCameraMode' -> format('y 進入相機模式'),
+        'dataLossWarning' -> format('rb 您的數據丟失將於該附近安全地方回復'),
+        'noSafeLocation' -> format('rb 在 32 格範圍內未找到安全位置。')
+    },
+    'en_us' -> {
+        'cannotWatchSelf' -> format('r You cannot watch yourself'),
+        'playerNotFound' -> format('r  Player not found'),
+        'exitCameraMode' -> format('y Exit camera mode'),
+        'enterCameraMode' -> format('y Enter camera mode'),
+        'dataLossWarning' -> format('rb Your lost data will be recovered in this nearby safe place'),
+        'noSafeLocation' -> format('rb No safe location found within 32 bolcks.')
+    },
+    'zh_cn' -> {
+        'cannotWatchSelf' -> format('r 您不能旁观自己'),
+        'playerNotFound' -> format('r 找不到玩家'),
+        'exitCameraMode' -> format('y 退出相机模式'),
+        'enterCameraMode' -> format('y 进入相机模式'),
+        'dataLossWarning' -> format('rb 您的数据丢失将于该附近安全地方回復'),
+        'noSafeLocation' -> format('rb 在 32 格范围内未找到安全位置。')
+    },
+};
+
+i18n(player, key) -> return(((global_languages:(player~'language')):key || (global_languages:'en_us'):key) || key);
 
 __restore_player_params(player) -> (
     config = __get_store_player_data(player);
@@ -32,10 +62,10 @@ __restore_player_params(player) -> (
             modify(player, 'motion', config:'motion');
             for (config:'effects', modify(player, 'effect', _:'name', _:'duration', _:'amplifier'));
         );
-        display_title(player, 'actionbar', format('y 退出相機模式')), (
+        display_title(player, 'actionbar', i18n(player, 'exitCameraMode')), (
             if (
                 __safe_survival(player),
-                display_title(player, 'actionbar', format('rb 您的數據丟失將於該附近安全地方回復')),
+                display_title(player, 'actionbar', i18n(player, 'dataLossWarning')),
                 return()
             );
         )
@@ -59,7 +89,7 @@ __safe_survival(player) -> (
             )
         )
     );
-    display_title(player, 'actionbar', format('rb 在 32 格範圍內未找到安全位置。'));
+    display_title(player, 'actionbar', i18n(player, 'noSafeLocation'));
     false
 );
 
@@ -68,7 +98,7 @@ __to_spectator(player) -> (
     modify(player, 'effect');
     modify(player, 'gamemode', 'spectator');
 
-    display_title(player, 'actionbar', format('y 進入相機模式'));
+    display_title(player, 'actionbar', i18n(player, 'enterCameraMode'));
 );
 
 __check_type(player) -> (
