@@ -23,25 +23,19 @@ global_languages = {
         'cannotWatchSelf' -> format('r 您不能旁觀自己'),
         'playerNotFound' -> format('r 找不到玩家'),
         'exitCameraMode' -> format('y 退出相機模式'),
-        'enterCameraMode' -> format('y 進入相機模式，以將您位置儲存'),
-        'dataLossWarning' -> format('rb 您的數據丟失將於該附近安全地方回復'),
-        'noSafeLocation' -> format('rb 在 32 格範圍內未找到安全位置。')
+        'enterCameraMode' -> format('y 進入相機模式，以將您位置儲存')
     },
     'en_us' -> {
         'cannotWatchSelf' -> format('r You cannot watch yourself'),
-        'playerNotFound' -> format('r  Player not found'),
+        'playerNotFound' -> format('r Player not found'),
         'exitCameraMode' -> format('y Exit camera mode'),
-        'enterCameraMode' -> format('y Enter camera mode, to save your location'),
-        'dataLossWarning' -> format('rb Your lost data will be recovered in this nearby safe place'),
-        'noSafeLocation' -> format('rb No safe location found within 32 bolcks.')
+        'enterCameraMode' -> format('y Enter camera mode, to save your location')
     },
     'zh_cn' -> {
         'cannotWatchSelf' -> format('r 您不能旁观自己'),
         'playerNotFound' -> format('r 找不到玩家'),
         'exitCameraMode' -> format('y 退出相机模式'),
-        'enterCameraMode' -> format('y 进入相机模式，以将您位置储存'),
-        'dataLossWarning' -> format('rb 您的数据丢失将于该附近安全地方回復'),
-        'noSafeLocation' -> format('rb 在 32 格范围内未找到安全位置。')
+        'enterCameraMode' -> format('y 进入相机模式，以将您位置储存')
     },
 };
 
@@ -62,35 +56,11 @@ __restore_player_params(player) -> (
             modify(player, 'motion', config:'motion');
             for (config:'effects', modify(player, 'effect', _:'name', _:'duration', _:'amplifier'));
         );
-        display_title(player, 'actionbar', i18n(player, 'exitCameraMode')), (
-            if (
-                __safe_survival(player),
-                display_title(player, 'actionbar', i18n(player, 'dataLossWarning')),
-                return()
-            );
-        )
+        display_title(player, 'actionbar', i18n(player, 'exitCameraMode'));
     );
 
     modify(player, 'gamemode', config:'gamemode');
     __remove_player_config(player);
-);
-
-__safe_survival(player) -> (
-    yposes = l();
-    l(x, y, z) = pos(player);
-    for(range(32), yposes += y + _; yposes += y - _);
-    for(yposes,
-        scan(x, _, z, 32, 0, 32,
-            up = pos_offset(_, 'up');
-            down = pos_offset(_, 'down');
-            if(air(_) && air(up) && suffocates(down) && !flammable(down),
-                modify(player, 'pos', pos(_)+l(0.5,0.2,0.5));
-                return(true);
-            )
-        )
-    );
-    display_title(player, 'actionbar', i18n(player, 'noSafeLocation'));
-    false
 );
 
 __to_spectator(player) -> (
@@ -103,7 +73,7 @@ __to_spectator(player) -> (
 
 __check_type(player) -> (
     if (
-        player~'gamemode' == 'spectator', __restore_player_params(player),
+        __get_store_player_data(player), __restore_player_params(player),
         __to_spectator(player)
     );
 );
