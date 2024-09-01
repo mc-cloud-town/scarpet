@@ -1,75 +1,145 @@
 // 原出處: https://github.com/gnembon/scarpet/blob/master/programs/survival/cam.sc
 // 修改: 猴貓 (https://github.com/a3510377)
 
+// Default language
+// zh_tw, en_us, zh_cn
+DEFAULT_LANGUAGE = 'en_us';
+
 __config() -> {
     'stay_loaded' -> 'true',
     'commands' -> {
         '' -> _() -> __check_type(player()),
-        '<tp_player>' -> _(tp_player) -> (
-            p = player(tp_player);
-            if (player() == p, return(run('tellraw @s "'+i18n(player(), 'cannotWatchSelf')+'"')));
-            if (p, (
-                if (player()~'gamemode' != 'spectator', __to_spectator(player()));
-                run('tp ' + p~'command_name')
-            ), run('tellraw @s "'+i18n(player(), 'playerNotFound')+'"'))
-        )
+        '<player_or_location>' -> _(value) -> (
+            args = split(' ', value);
+            len = length(args);
+            m_p = player();
+
+            if(len == 1, (
+                p = player(value);
+                if (p, (
+                    if (m_p~'gamemode' != 'spectator', __to_spectator(m_p));
+                    if (m_p == p, __tp_to_base_location(p), run('tp ' + p~'command_name'));
+                ), display_title(m_p, 'actionbar', i18n(m_p, 'playerNotFound')))
+            ), (
+                // /c <x> <y> <z>
+                // /c <x> <y> <z> in <dimension>
+                if (len != 3 && len != 5, (
+                    display_title(m_p, 'actionbar', i18n(m_p, 'invalidLocation'));
+                    return();
+                ));
+
+                n_args = map(slice(args, 0, 3), number(_));
+                if(!all(n_args, _ != null), (
+                    display_title(m_p, 'actionbar', i18n(m_p, 'invalidLocation'));
+                    return();
+                ));
+
+                dimension = args:4;
+                if (dimension~system_info('world_dimensions') == null, dimension = m_p~'dimension');
+
+                if (m_p~'gamemode' != 'spectator', __to_spectator(m_p));
+                run('execute in '+dimension+' run tp ' + m_p~'command_name' + ' ' + join(' ', n_args));
+            ))
+        ),
     },
-    'arguments' -> {'tp_player' -> {'type' -> 'players', 'single' -> true}},
+    'arguments' -> {
+        'player_or_location' -> {
+            'type' -> 'text',
+            'suggester' -> _(args) -> (
+                nameset = {'@r'};
+                player_or_location = args:'player_or_location' || '';
+                arg_loc = replace(player_or_location, ' +$', '');
+                args_loc = split(' ', if(arg_loc == '', null, arg_loc));
+                len = length(args_loc);
+                // if(player_or_location && slice(player_or_location, -1) == ' ', len += 1);
+
+                for(player('all'), nameset += _);
+                if(len < 3, (
+                    if (!len || number(args_loc:0) != null, (
+                        for(pos(player()), (
+                            if(_i > len - 1, (
+                                if (_i, arg_loc += ' ');
+                                arg_loc += str('%.2f', _);
+                                nameset += arg_loc;
+                            ));
+                        ));
+                    ));
+                ), (
+                    arg = args_loc:3;
+                    if (len == 3 || len == 4, (
+                        for(
+                            system_info('world_dimensions'),
+                            nameset += arg_loc+(if(arg == 'in', ' ', ' in '))+_
+                        );
+                    ));
+                ));
+
+                keys(nameset)
+            ),
+            'single' -> true,
+        }
+    },
 };
 
 
 global_languages = {
     'zh_tw' -> {
-        'cannotWatchSelf' -> format('r 您不能旁觀自己'),
         'playerNotFound' -> format('r 找不到玩家'),
         'exitCameraMode' -> format('y 退出相機模式'),
         'enterCameraMode' -> format('y 進入相機模式'),
+        'invalidLocation' -> format('rb 無效位置'),
         'dataLossWarning' -> format('rb 您的數據丟失將於該附近安全地方回復'),
         'noSafeLocation' -> format('rb 在 32 格範圍內未找到安全位置。')
     },
     'en_us' -> {
-        'cannotWatchSelf' -> format('r You cannot watch yourself'),
         'playerNotFound' -> format('r  Player not found'),
         'exitCameraMode' -> format('y Exit camera mode'),
         'enterCameraMode' -> format('y Enter camera mode'),
+        'invalidLocation' -> format('rb Invalid location'),
         'dataLossWarning' -> format('rb Your lost data will be recovered in this nearby safe place'),
         'noSafeLocation' -> format('rb No safe location found within 32 bolcks.')
     },
     'zh_cn' -> {
-        'cannotWatchSelf' -> format('r 您不能旁观自己'),
         'playerNotFound' -> format('r 找不到玩家'),
         'exitCameraMode' -> format('y 退出相机模式'),
         'enterCameraMode' -> format('y 进入相机模式'),
+        'invalidLocation' -> format('rb 无效位置'),
         'dataLossWarning' -> format('rb 您的数据丢失将于该附近安全地方回復'),
         'noSafeLocation' -> format('rb 在 32 格范围内未找到安全位置。')
     },
 };
 
-i18n(player, key) -> return(((global_languages:(player~'language')):key || (global_languages:'en_us'):key) || key);
+i18n(player, key) -> return(((global_languages:(player~'language')):key || (global_languages:DEFAULT_LANGUAGE):key) || key);
 
-__restore_player_params(player) -> (
+__tp_to_base_location(player) -> (
     config = __get_store_player_data(player);
 
-    if (config, 
-        run('execute in ' + config:'dimension' + ' run tp @s ~ ~ ~');
+    if (config,
+        [x, y, z] = config:'pos';
+        run('execute in '+config:'dimension'+' run tp @s '+x+' '+y+' '+z);
+        for(l('yaw', 'pitch'), modify(player, _, config:_));
+    );
 
+    config
+);
+
+__restore_player_params(player) -> (
+    config = __tp_to_base_location(player);
+
+    if (config,(
         try (
-            modify(player, 'location', [
-                ...config:'pos',
-                config:'yaw',
-                config:'pitch'
-            ]);
             modify(player, 'motion', config:'motion');
             for (config:'effects', modify(player, 'effect', _:'name', _:'duration', _:'amplifier'));
         );
-        display_title(player, 'actionbar', i18n(player, 'exitCameraMode')), (
-            if (
-                __safe_survival(player),
-                display_title(player, 'actionbar', i18n(player, 'dataLossWarning')),
-                return()
-            );
-        )
-    );
+
+        display_title(player, 'actionbar', i18n(player, 'exitCameraMode'));
+    ), (
+        if (
+            __safe_survival(player),
+            display_title(player, 'actionbar', i18n(player, 'dataLossWarning')),
+            return()
+        );
+    ));
 
     modify(player, 'gamemode', 'survival');
     __remove_player_config(player);
@@ -117,8 +187,8 @@ __remove_player_config(player) -> (
 __store_player_data(player) -> (
     tag = nbt('{}');
 
-    for(pos(player), put(tag:'Position', str('%.6fd', _), _i)); 
-    for(player~'motion', put(tag:'Motion', str('%.6fd', _), _i)); 
+    for(pos(player), put(tag:'Position', str('%.6fd', _), _i));
+    for(player~'motion', put(tag:'Motion', str('%.6fd', _), _i));
 
     tag:'Yaw' = str('%.6f', player~'yaw');
     tag:'Pitch' = str('%.6f', player~'pitch');
