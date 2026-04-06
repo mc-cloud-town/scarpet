@@ -3,7 +3,7 @@
 
 // Default language
 // zh_tw, en_us, zh_cn
-DEFAULT_LANGUAGE = 'en_us';
+DEFAULT_LANGUAGE = 'zh_tw';
 
 __config() -> {
     'stay_loaded' -> 'true',
